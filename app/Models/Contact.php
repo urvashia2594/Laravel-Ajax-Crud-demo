@@ -12,6 +12,14 @@ class Contact extends Model
     use HasFactory;
     use SoftDeletes;
 
+    protected static function boot() {
+        parent::boot();
+    
+        static::deleted(function ($contact) {
+          $contact->merged()->delete();
+        });
+    }
+
     protected $fillable = [
         'name',
         'email',
