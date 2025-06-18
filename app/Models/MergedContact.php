@@ -9,15 +9,26 @@ class MergedContact extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['master_contact_id', 'merged_contact_id'];
+    protected $fillable = [
+        'merged_ids',
+        'master_id',
+        'name',
+        'email',
+        'phone',
+        'gender',
+        'image',
+        'document',
+        'custom_fields',
+    ];
+
+    protected $casts = [
+        'merged_ids' => 'array',
+        'custom_fields' => 'array',
+    ];
 
     public function master()
     {
-        return $this->belongsTo(Contact::class, 'master_contact_id');
+        return $this->belongsTo(Contact::class, 'master_id');
     }
 
-    public function merged()
-    {
-        return $this->belongsTo(Contact::class, 'merged_contact_id');
-    }
 }

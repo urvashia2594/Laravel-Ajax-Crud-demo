@@ -24,4 +24,6 @@ Route::get('/api/contacts', function (Request $request) {
     return Contact::whereIn('id', $request->ids)->select('id', 'name','email')->get();
 });
 Route::post('/contacts/merge', [ContactController::class, 'merge'])->name('contact.merge');
+Route::get('/contacts/{id}/merged', [ContactController::class, 'showMergedContacts'])->name('contact.merged');
+
 Route::resource('contact', ContactController::class);

@@ -17,3 +17,11 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+/storage/*
+!/storage/app
+!/storage/app/public
+!/storage/logs
+
+/public/documents/*
+/public/uploads/*

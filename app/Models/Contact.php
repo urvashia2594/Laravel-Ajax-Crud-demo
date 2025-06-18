@@ -24,7 +24,7 @@ class Contact extends Model
 
     public function merged()
     {
-        return $this->hasMany(MergedContact::class, 'master_contact_id');
+        return $this->hasMany(MergedContact::class, 'master_id','id');
     }
 
     // protected $casts = ['custom_fields' => 'array'];

@@ -13,12 +13,18 @@ return new class extends Migration
     {
         Schema::create('merged_contacts', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('master_contact_id');
-            $table->unsignedBigInteger('merged_contact_id');
+            $table->unsignedBigInteger('master_id');
+            $table->json('merged_ids'); // Original contact IDs
+            $table->string('name');
+            $table->string('email');
+            $table->string('phone')->nullable();
+            $table->string('gender')->nullable();
+            $table->string('image')->nullable();
+            $table->string('document')->nullable();
+            $table->json('custom_fields')->nullable();
             $table->timestamps();
 
-            $table->foreign('master_contact_id')->references('id')->on('contacts')->onDelete('cascade');
-            $table->foreign('merged_contact_id')->references('id')->on('contacts')->onDelete('cascade');
+            $table->foreign('master_id')->references('id')->on('contacts')->onDelete('cascade');
         });
     }
 

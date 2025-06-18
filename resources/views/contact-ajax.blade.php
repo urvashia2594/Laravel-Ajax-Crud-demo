@@ -50,6 +50,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h4 class="modal-title" id="modelHeading"></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
             <div class="modal-body">
                 <div id="formErrors" class="alert alert-danger d-none"></div>
@@ -144,6 +147,22 @@
       <div class="modal-footer">
         <button type="button" id="confirmMerge" class="btn btn-primary">Confirm Merge</button>
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="mergedContactsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Merged Contact History</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+      </div>
+      <div class="modal-body">
+        <ul id="mergedContactList" class="list-group"></ul>
       </div>
     </div>
   </div>
@@ -404,19 +423,53 @@
 
     $('#confirmMerge').on('click', function () {
         let master_id = $('#masterContactSelect').val();
-        let merge_ids = $('.contactCheckbox:checked').map(function () {
+        let ids = $('.contactCheckbox:checked').map(function () {
             return $(this).val();
         }).get().filter(id => id != master_id);
 
         $.post("{{ route('contact.merge') }}", {
             master_id,
-            merge_ids
+            ids
         }, function (res) {
             $('#mergeModal').modal('hide');
             alert(res.success);
             $('.data-table').DataTable().ajax.reload();
         });
     });
+
+    $(document).on('click', '.showMergedBtn', function () {
+        let contactId = $(this).data('id');
+
+        $.get(`/contacts/${contactId}/merged`, function (data) {
+            console.log('Merged contact data:', data);
+            if (data.length === 0) {
+                alert("No merged contact data found.");
+                return;
+            }
+
+            let html = data.map(item => {
+            let mergedIds = item.merged_ids;
+
+            let fields = item.custom_fields 
+                ? Object.entries(item.custom_fields).map(([k, v]) => `<li>${v.key}: ${v.value}</li>`).join('')
+                : '';
+
+            return `
+                <li class="list-group-item">
+                    <strong>${item.name}</strong> (${item.email ?? 'No email'})<br/>
+                    Phone: ${item.phone ?? 'N/A'}, Gender: ${item.gender ?? 'N/A'}<br/>
+                    <strong>Merged IDs:</strong> ${mergedIds}<br/>
+                    <strong>Custom Fields:</strong>
+                    <ul>${fields}</ul>
+                </li>
+            `;
+        }).join('');
+
+            $('#mergedContactList').html(html);
+            $('#mergedContactsModal').modal('show');
+        });
+    });
+
 
 </script>
 </html>

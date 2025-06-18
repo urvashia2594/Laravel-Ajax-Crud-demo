@@ -17,7 +17,7 @@ class ContactController extends Controller
         //
         if ($request->ajax()) {
   
-            $data = Contact::latest()->get();
+            $data = Contact::with('merged')->latest()->get();
   
             return Datatables::of($data)
                     ->addIndexColumn()
@@ -58,6 +58,10 @@ class ContactController extends Controller
                            $btn = '<a href="javascript:void(0)" data-toggle="tooltip"  data-id="'.$row->id.'" data-original-title="Edit" class="edit btn btn-primary btn-sm editContact">Edit</a>';
    
                            $btn = $btn.' <a href="javascript:void(0)" data-toggle="tooltip"  data-id="'.$row->id.'" data-original-title="Delete" class="btn btn-danger btn-sm deleteContact">Delete</a>';
+
+                            if($row->merged->count())
+                                $btn.=   '<button class="btn btn-sm btn-info showMergedBtn" data-id=" '. $row->id .'">Show Merged</button>';
+                            
     
                             return $btn;
                     })
@@ -175,49 +179,54 @@ class ContactController extends Controller
     public function merge(Request $request)
     {
         $request->validate([
-            'master_id' => 'required|exists:contacts,id',
-            'merge_ids' => 'required|array|min:1',
-            'merge_ids.*' => 'exists:contacts,id',
+            'ids' => 'required|array|min:2',
+            'master_id' => 'required|integer|exists:contacts,id',
         ]);
-
-        $master = Contact::findOrFail($request->master_id);
-        $mergeContacts = Contact::whereIn('id', $request->merge_ids)->get();
-
-        foreach ($mergeContacts as $contact) {
-            if ($contact->id == $master->id) continue;
-
-            // Merge phones/emails only if different
-            if ($contact->email && $contact->email !== $master->email) {
-                $master->email .= ', ' . $contact->email;
-            }
-
-            if ($contact->phone && $contact->phone !== $master->phone) {
-                $master->phone .= ', ' . $contact->phone;
-            }
-
-            // Merge custom fields
-            $masterFields = json_decode($master->custom_fields, true) ?? [];
-            $mergeFields = json_decode($contact->custom_fields, true) ?? [];
-
-            foreach ($mergeFields as $field) {
-                if (!collect($masterFields)->contains(fn($f) => $f['key'] === $field['key'] && $f['value'] === $field['value'])) {
-                    $masterFields[] = $field;
+        
+        $ids = $request->ids;
+        $masterId = $request->master_id;
+    
+        $master = Contact::findOrFail($masterId);
+        $others = Contact::whereIn('id', $ids)->where('id', '!=', $masterId)->get();
+    
+        $mergedEmails = [$master->email];
+        $mergedPhones = [$master->phone];
+        $mergedFields = json_decode($master->custom_fields, true) ?? [];
+    
+        foreach ($others as $contact) {
+            if ($contact->email) $mergedEmails[] = $contact->email;
+            if ($contact->phone) $mergedPhones[] = $contact->phone;
+    
+            $otherFields = json_decode($contact->custom_fields, true) ?? [];
+            foreach ($otherFields as $field) {
+                if (!in_array($field, $mergedFields)) {
+                    $mergedFields[] = $field;
                 }
             }
-
-            $master->custom_fields = json_encode($masterFields);
-            $master->save();
-
-            // Record merge
-            MergedContact::create([
-                'master_contact_id' => $master->id,
-                'merged_contact_id' => $contact->id,
-            ]);
-
-            // Optionally delete or mark the merged contact
-            $contact->delete();
         }
+    
+        // Save merged result in new table
+        MergedContact::create([
+            'merged_ids' =>implode(',', $ids),
+            'master_id' => $masterId,
+            'name' => $master->name,
+            'email' => implode(',', array_unique($mergedEmails)),
+            'phone' => implode(',', array_unique($mergedPhones)),
+            'gender' => $master->gender,
+            'image' => $master->prof_img,
+            'document' => $master->doc,
+            'custom_fields' => $mergedFields,
+        ]);
+    
+        // Delete original records (or flag them as merged)
+        Contact::whereIn('id', $ids)->delete();
+    
+        return response()->json(['success' => 'Contacts merged and saved to merged_contacts table.']);
+    }
 
-        return response()->json(['success' => 'Contacts merged successfully.']);
+    public function showMergedContacts($id)
+    {
+        $contact = Contact::with('merged')->findOrFail($id);
+        return response()->json($contact->merged);
     }
 }
