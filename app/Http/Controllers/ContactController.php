@@ -33,13 +33,13 @@ class ContactController extends Controller
                     })
                     ->addColumn('image', function($row){
                         if ($row->prof_img) {
-                            return '<img src="' . asset('uploads/' . $row->prof_img) . '" width="50" height="50">';
+                            return '<img src="' . asset('storage/' . $row->prof_img) . '" width="50" height="50">';
                         }
                         return 'No Image';
                     })
                     ->addColumn('document', function($row){
                         if ($row->doc) {
-                            return '<a href="' . asset('documents/' . $row->doc) . '" target="_blank">View</a>';
+                            return '<a href="' . asset('storage/' . $row->doc) . '" target="_blank">View</a>';
                         }
                         return 'No File';
                     })
@@ -88,16 +88,15 @@ class ContactController extends Controller
         $this->validateContact($request);
         $contactId = $request->contact_id;
         $data = $request->only('name', 'email', 'phone', 'gender');
+        
         if ($request->hasFile('prof_img')) {
-            $imageName = time() . '.' . $request->prof_img->extension();
-            $request->prof_img->move(public_path('uploads'), $imageName);
-            $data['prof_img'] = $imageName;
+            $imagePath = $request->file('prof_img')->store('ProfileImage', 'public');
+            $data['prof_img'] = $imagePath; 
         }
+
         if ($request->hasFile('doc')) {
-            $file = $request->file('doc');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('documents'), $filename);
-            $data['doc'] = $filename;
+            $docPath = $request->file('doc')->store('documents', 'public');
+            $data['doc'] = $docPath; // Save 'documents/filename.pdf' in DB
         }
 
         // Handle custom fields
