@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Contact;
 use Yajra\DataTables\DataTables;
 use App\Models\MergedContact;
+use Illuminate\Validation\Rule;
 
 class ContactController extends Controller
 {
@@ -153,11 +154,17 @@ class ContactController extends Controller
 
     private function validateContact(Request $request)
     {
-        $contactId = $request->contact_id;
+        $contactId = $request->contact_id ? (int) $request->contact_id : null;
 
         $rules = [
             'name'      => 'required|string|max:255',
-            'email'     => 'required|email|unique:contacts,email,' . $contactId,
+            'email'     => [
+                'required',
+                'email',
+                Rule::unique('contacts', 'email')
+                ->ignore($contactId)
+                ->whereNull('deleted_at')
+            ],
             'phone'     => 'required|digits:10',
             'gender'    => 'required|in:1,2,3',
             'prof_img'  => 'nullable|image|mimes:jpeg,png,jpg,gif',
@@ -178,7 +185,7 @@ class ContactController extends Controller
     public function merge(Request $request)
     {
         $request->validate([
-            'ids' => 'required|array|min:2',
+            'ids' => 'required|array|min:1|max:2',
             'master_id' => 'required|integer|exists:contacts,id',
         ]);
         

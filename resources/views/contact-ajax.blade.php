@@ -36,7 +36,8 @@
                 <th>Image</th>
                 <th>Document</th>
                 <th>Custom Field</th>
-                <th><input type="checkbox" id="selectAll" /></th>
+                <!-- <th><input type="checkbox" id="selectAll" /></th> -->
+                <th></th>
                 <th width="280px">Action</th>
             </tr>
         </thead>
@@ -269,9 +270,9 @@
         var form = $('#contactForm')[0];
         var formData = new FormData(form);
 
-        if ($('#customFieldsWrapper').children().length === 0) {
-            formData.append('custom_fields', JSON.stringify([]));
-        }
+        // if ($('#customFieldsWrapper').children().length === 0) {
+        //     formData.append('custom_fields', JSON.stringify([]));
+        // }
 
         $.ajax({
           data: formData,
@@ -408,8 +409,13 @@
         return $(this).val();
     }).get();
 
-    if (selected.length < 2) {
-        alert('Select at least 2 contacts to merge.');
+    if (selected.length == 0) {
+        alert('Select at least 1 contacts to merge.');
+        return;
+    }
+
+    if (selected.length > 2) {
+        alert('You can select max up to 2 contact to merge');
         return;
     }
 
